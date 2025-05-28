@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>User Session Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            white-space: pre-wrap; /* Ensures long strings wrap */
+            word-wrap: break-word; /* Ensures long words break */
+        }
+        .no-session {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .session-info {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Current User Session</h1>
+        <div id="sessionInfo">Loading session...</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const sessionInfoDiv = document.getElementById('sessionInfo');
+
+            try {
+                // Attempt to get the user session from the Electron main process
+                const session = await window.electronAPI.getAuthSession();
+
+                if (session && session.username) {
+                    // If a session exists, display its details
+                    sessionInfoDiv.className = 'session-info';
+                    sessionInfoDiv.innerHTML = `
+                        <p><strong>Status:</strong> Logged In</p>
+                        <p><strong>Username:</strong> ${session.username}</p>
+                        <p><strong>Logged In At:</strong> ${session.loggedInAt || 'N/A'}</p>
+                        <p><strong>Created At:</strong> ${session.createdAt || 'N/A'}</p>
+                        <p><strong>Full Session Data:</strong></p>
+                        <pre>${JSON.stringify(session, null, 2)}</pre>
+                    `;
+                } else {
+                    // If no session is found
+                    sessionInfoDiv.className = 'no-session';
+                    sessionInfoDiv.textContent = 'No active user session found.';
+                }
+            } catch (error) {
+                // Handle any errors during the IPC call
+                sessionInfoDiv.className = 'no-session';
+                sessionInfoDiv.innerHTML = `
+                    <p>Error fetching session:</p>
+                    <pre>${error.message}</pre>
+                    <p>Please ensure 'window.electronAPI.getAuthSession()' is correctly defined in your preload script.</p>
+                `;
+                console.error("Error fetching user session:", error);
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CypherVault – Decrypt</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f3f3f3;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 300px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 30px;
+      white-space: pre-wrap;
+      background-color: #222;
+      color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Decrypt Stored Account</h1>
+  <input type="text" id="profile" placeholder="Enter profile name (e.g. github)" />
+  <br>
+  <button onclick="decryptAccount()">Retrieve & Decrypt</button>
+
+  <div id="result">Account data will appear here.</div>
+
+  <script>
+    async function decryptAccount() {
+      const profile = document.getElementById('profile').value.trim();
+      const resultBox = document.getElementById('result');
+
+      if (!profile) {
+        alert("Please enter a profile name.");
+        return;
+      }
+
+      const session = await window.electronAPI.getUserSession?.();
+      if (!session || !session.username) {
+        resultBox.textContent = "You must be logged in to retrieve account data.";
+        return;
+      }
+
+      try {
+        const response = await window.electronAPI.loadAccount(profile);
+        if (response.success) {
+          const { profile, username, password } = response.data;
+          resultBox.textContent = `Decrypted Data:\n\nProfile: ${profile}\nUsername: ${username}\nPassword: ${password}`;
+        } else {
+          resultBox.textContent = "Error: " + response.error;
+        }
+      } catch (err) {
+        resultBox.textContent = "Error: " + err.message;
+      }
+    }
+  </script>
+
+</body>
+</html>

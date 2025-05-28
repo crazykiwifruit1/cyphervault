@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Account – Account</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #1dc4f3;
+    }
+
+    .button-row {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .button-row button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .content {
+      margin-top: 100px;
+    }
+
+    h1 {
+      font-size: 32px;
+      color: #000;
+    }
+
+    button.back-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation buttons -->
+  <div class="button-row">
+    <button onclick="gotosettings()">Settings</button>
+    <button onclick="gotoaccount()">Account</button>
+    <button onclick="gotoabout()">About</button>
+    <button onclick="gotodecrypt()">Decrypt</button>
+  </div>
+
+  <!-- Page Content -->
+  <div class="content">
+    <h1>Account</h1>
+    <button class="back-btn" onclick="goBack()">Go Back</button>
+  </div>
+
+  <script>
+    // Navigation functions
+    function gotosettings() {
+      window.location.href = "settings.html";
+    }
+
+    function gotoaccount() {
+      window.location.href = "account.html";
+    }
+
+    function gotoabout() {
+      window.location.href = "about.html";
+    }
+
+    function goBack() {
+      window.location.href = "index1.html";
+    }
+  </script>
+
+</body>
+</html>

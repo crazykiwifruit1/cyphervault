@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CypherVault</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #1dc4f3;
+    }
+
+    .button-row {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .button-row button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 300px;
+    }
+
+    #output {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      background-color: #372b86;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgb(255, 255, 255);
+    }
+
+    /* Style for the generated password section */
+    .password-generator-section {
+      margin-top: 60px;
+      background-color: #ffffffdd;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+    }
+    .password-generator-section label {
+      font-weight: bold;
+    }
+    .password-generator-section input[type="range"] {
+      width: 100%;
+      margin-top: 5px;
+    }
+    .password-generator-section button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #generatedPassword {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #372b86;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="button-row">
+    <button onclick="gotosettings()">Settings</button>
+    <button onclick="gotoaccount()">Account</button>
+    <button onclick="gotoabout()">About</button>
+    <button onclick="gotodecrypt()">View Profiles</button>
+  </div>
+
+  <h1>Password Strength Checker</h1>
+  <input type="text" id="profilename" placeholder="Enter profile name" />
+  <input type="text" id="username" placeholder="Enter username" />
+  <input type="text" id="pwd" placeholder="Enter password" />
+  <div id="output">Start typing a password to see results.</div>
+
+  <div style="margin-top: 40px;">
+    <button style="margin-top: 40px; padding: 15px 30px; font-size: 18px;" onclick="storeAccount()">Store Account</button>
+  </div>
+
+  <div class="password-generator-section">
+    <h2>Generate Memorable Password</h2>
+
+    <label for="strengthRange">Strength level <span id="strengthVal">5</span></label><br>
+    <input type="range" id="strengthRange" min="1" max="10" value="5" oninput="document.getElementById('strengthVal').textContent = this.value"><br><br>
+
+    <label for="lengthRange">Length <span id="lengthVal">16</span></label><br>
+    <input type="range" id="lengthRange" min="4" max="64" value="16" oninput="document.getElementById('lengthVal').textContent = this.value"><br><br>
+
+    <button onclick="generatePassword()">Generate Password</button>
+
+    <div id="generatedPassword"></div>
+  </div>
+
+  <script>
+    // Navigation functions (corrected gotoabout to go to login.html as per previous context)
+    function gotosettings() { window.location.href = "settings.html"; }
+    function gotoaccount() { window.location.href = "account.html"; }
+    function gotoabout() { window.location.href = "login.html"; } // Assuming 'About' links to login for demonstration
+    function gotodecrypt() { window.location.href = "pwdlist.html"; } // Renamed button text to "View Profiles" in HTML
+
+    const pwdInput = document.getElementById('pwd');
+    const output = document.getElementById('output');
+
+    let debounceTimeout;
+    pwdInput.addEventListener('input', () => {
+      const pwd = pwdInput.value;
+
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(async () => {
+        if (!pwd) {
+          output.textContent = "Please enter a password.";
+          return;
+        }
+
+        try {
+          // Use electronAPI to call check-password IPC handler
+          const result = await window.electronAPI.checkPassword(pwd);
+
+          if (result.error) {
+            output.textContent = `Error: ${result.error}`;
+          } else {
+            output.textContent = `Entropy: ${result.entropy}
+Matches: ${result.matches.length ? result.matches.join(', ') : 'None'}
+Match Count: ${result.match_count}`;
+          }
+        } catch (err) {
+          console.error("Error checking password strength:", err);
+          output.textContent = `An unexpected error occurred: ${err.message}`;
+        }
+      }, 300);
+    });
+
+    async function storeAccount() { // Renamed from storeaccount to storeAccount for consistency
+      const profile = document.getElementById('profilename').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('pwd').value.trim();
+
+      if (!profile || !username || !password) {
+        alert("Please fill out all fields.");
+        document.getElementById('pwd').focus();
+        return;
+      }
+
+      try {
+        // No need to get session.username here, Flask's @login_required handles user association.
+        // The 'owner' field in main.js was removed from the data sent to Flask.
+        const accountData = {
+          profile: profile,
+          username: username,
+          password: password,
+        };
+
+        // Use electronAPI to call store-account IPC handler
+        const result = await window.electronAPI.storeAccount(accountData);
+
+        if (result.success) {
+          alert("Account stored securely.");
+          // Clear form fields after successful storage
+          document.getElementById('profilename').value = '';
+          document.getElementById('username').value = '';
+          document.getElementById('pwd').value = '';
+          output.textContent = "Start typing a password to see results."; // Reset strength checker
+        } else {
+          alert("Error: " + (result.error || "Failed to store account."));
+        }
+      } catch (err) {
+        console.error("Error storing account:", err);
+        alert("An unexpected error occurred while trying to store the account: " + err.message);
+      }
+    }
+
+    async function generatePassword() {
+      const strength = document.getElementById('strengthRange').value;
+      const length = document.getElementById('lengthRange').value;
+
+      try {
+        // --- NEW: Use window.electronAPI to call a 'generate-password' IPC handler ---
+        // You'll need to add this IPC handler in your main.js
+        const result = await window.electronAPI.generatePassword(strength, length);
+
+        if (result.error) {
+          document.getElementById('generatedPassword').textContent = `Error: ${result.error}`;
+        } else {
+          document.getElementById('generatedPassword').textContent = `Generated Password: ${result.password}`;
+          document.getElementById('pwd').value = result.password; // Auto-fill the password input field
+        }
+      } catch (err) {
+        console.error("Error generating password:", err);
+        document.getElementById('generatedPassword').textContent = `An unexpected error occurred: ${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

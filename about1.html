@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Biometric Authentication – CypherVault</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    #status {
+      margin-top: 20px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>Biometric Authentication</h1>
+  <p>Use Windows Hello or device biometrics to authenticate.</p>
+  <button onclick="registerBiometric()">Register Biometric</button>
+  <button onclick="authenticateBiometric()">Authenticate</button>
+
+  <div id="status"></div>
+
+  <script>
+    async function registerBiometric() {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const options = {
+        publicKey: {
+          challenge,
+          rp: {
+            name: "CypherVault"
+          },
+          user: {
+            id: Uint8Array.from('cypheruser', c => c.charCodeAt(0)),
+            name: "cypheruser",
+            displayName: "CypherVault User"
+          },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+          authenticatorSelection: {
+            authenticatorAttachment: "platform",
+            userVerification: "required"
+          },
+          timeout: 60000,
+          attestation: "direct"
+        }
+      };
+
+      try {
+        const credential = await navigator.credentials.create(options);
+        document.getElementById("status").textContent = "Biometric registered.";
+        window.localStorage.setItem("biometricCredential", JSON.stringify(credential));
+      } catch (err) {
+        document.getElementById("status").textContent = "Registration failed: " + err.message;
+      }
+    }
+
+    async function authenticateBiometric() {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const options = {
+        publicKey: {
+          challenge,
+          timeout: 60000,
+          userVerification: "required",
+          allowCredentials: []
+        }
+      };
+
+      try {
+        const assertion = await navigator.credentials.get(options);
+        document.getElementById("status").textContent = "Authentication successful.";
+      } catch (err) {
+        document.getElementById("status").textContent = "Authentication failed: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
+

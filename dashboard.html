@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background-color: #eef2f5;
+    }
+    #container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="container">
+  <h2 id="welcome"></h2>
+  <button id="logoutBtn">Log Out</button>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const session = await window.electronAPI.getAuthSession();
+    if (!session) {
+      window.location.href = 'login.html';
+      return;
+    }
+    document.getElementById('welcome').textContent = `Welcome, ${session.username}`;
+
+    window.electronAPI.onSessionExpired(() => {
+      alert("Session expired. Redirecting to login.");
+      window.location.href = 'login.html';
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await window.electronAPI.clearAuthSession();
+      window.location.href = 'login.html';
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>CypherVault – Stored Credentials</title>
+  <style>
+    /* Your CSS styles here */
+  </style>
+</head>
+<body>
+
+  <h1>Stored Credentials</h1>
+  
+  <div id="credentialsList">Loading credentials...</div>
+
+  <script>
+    async function fetchCredentials() {
+      const container = document.getElementById('credentialsList');
+      container.textContent = "Loading credentials...";
+    
+    try {
+      // Get user session from Electron preload API
+      const session = await window.electronAPI.getAuthSession();
+      if (!session || !session.username) {
+        container.textContent = "Not logged in. No session found.";
+        return;
+      }
+
+      // Fetch credentials from backend (no owner query parameter needed)
+      const res = await fetch(`http://localhost:5000/api/profiles`, {
+        credentials: 'include'   // send cookies/session if used
+      });
+      const result = await res.json();
+
+      if (!result.success) {
+        container.textContent = "Error: " + result.error;
+        return;
+      }
+
+      const credentials = result.data;
+      if (!Array.isArray(credentials) || credentials.length === 0) {
+        container.textContent = "No credentials found.";
+        return;
+      }
+
+      container.innerHTML = '';
+
+      credentials.forEach((cred, index) => {
+        const div = document.createElement('div');
+        div.className = 'credential';
+        div.id = `credential-${index}`;
+
+        div.innerHTML = `
+          <strong>Profile:</strong> ${cred.profile}<br>
+          <strong>Username:</strong> ${cred.username}<br>
+          <div class="password" id="password-${index}"><strong>Password:</strong> ${cred.password}</div>
+          <button class="toggle-btn" onclick="togglePassword(${index})">Show Password</button>
+          <button class="delete-btn" onclick="deleteCredential('${cred.profile}', ${index})">Delete</button>
+        `;
+
+        container.appendChild(div);
+      });
+
+    } catch (err) {
+      container.textContent = "Error fetching credentials: " + err.message;
+    }
+  }
+
+  function togglePassword(index) {
+    const pwDiv = document.getElementById(`password-${index}`);
+    const btn = pwDiv.nextElementSibling || pwDiv.parentElement.querySelector('.toggle-btn');
+
+    if (pwDiv.style.display === 'none' || pwDiv.style.display === '') {
+      pwDiv.style.display = 'block';
+      btn.textContent = 'Hide Password';
+    } else {
+      pwDiv.style.display = 'none';
+      btn.textContent = 'Show Password';
+    }
+  }
+
+  async function deleteCredential(profileName, index) {
+    if (!confirm(`Are you sure you want to delete the profile "${profileName}"?`)) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/delete?profile=${encodeURIComponent(profileName)}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        const div = document.getElementById(`credential-${index}`);
+        if (div) {
+          div.remove();
+        }
+      } else {
+        alert("Error deleting profile: " + result.error);
+      }
+    } catch (err) {
+      alert("Error deleting profile: " + err.message);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', fetchCredentials);
+</script>

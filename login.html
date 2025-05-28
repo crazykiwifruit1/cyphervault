@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CypherVault - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1dc4f3; /* Matching your existing theme */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        .login-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 350px;
+            max-width: 90%;
+        }
+
+        h1 {
+            color: #372b86;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #372b86;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2b216b;
+        }
+
+        .error-message {
+            color: #d9534f;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>CypherVault Login</h1>
+        <input type="text" id="username" placeholder="Username" autocomplete="username" />
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+        
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+
+        <p id="message" class="error-message"></p>
+    </div>
+
+    <script>
+        const messageDisplay = document.getElementById('message');
+
+        function displayMessage(msg, isError = true) {
+            messageDisplay.textContent = msg;
+            messageDisplay.style.color = isError ? '#d9534f' : '#372b86';
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                displayMessage('Please enter both username and password.');
+                return;
+            }
+
+            displayMessage('Logging in...', false); // Indicate loading state
+
+            try {
+                // Use electronAPI to call the 'authenticate' IPC handler
+                const result = await window.electronAPI.authenticate({ username, password });
+
+                if (result.success) {
+                    displayMessage('Login successful!', false);
+                    console.log("successful")
+                    
+                    window.location.href = 'index1.html'; 
+                } else {
+                    displayMessage(`Login failed: ${result.message || "Invalid credentials."}`);
+                }
+            } catch (err) {
+                console.error("Login IPC call failed:", err);
+                displayMessage(`An unexpected error occurred during login. Please try again. (${err.message})`);
+            }
+        }
+
+        async function register() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                displayMessage('Please enter both username and password.');
+                return;
+            }
+
+            displayMessage('Registering...', false); // Indicate loading state
+
+            try {
+                // Use electronAPI to call the 'register' IPC handler
+                const result = await window.electronAPI.registerUser(username, password); // Corrected function name
+
+                if (result.success) {
+                    displayMessage("Registered successfully! You can now log in.", false);
+                    // Optionally clear fields or auto-fill username for login
+                    document.getElementById('password').value = ''; 
+                } else {
+                    displayMessage(`Registration error: ${result.message || "Username might be taken or server error."}`);
+                }
+            } catch (err) {
+                console.error("Registration IPC call failed:", err);
+                displayMessage(`An unexpected error occurred during registration. Please try again. (${err.message})`);
+            }
+        }
+    </script>
+</body>
+</html>
